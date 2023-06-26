@@ -1,0 +1,182 @@
+#define C1 9 //도트 매트릭스 행렬 지정 
+#define C2 12
+#define C3 7
+#define C4 13
+#define C5 A2
+#define C6 6
+#define C7 3
+#define C8 A5
+// Row Pin 할당
+#define R1 20 //11
+#define R2 11
+#define R3 100
+#define R4 A4
+#define R5 8//1
+#define R6 A3
+#define R7 4
+#define R8 5
+ 
+int colPin[8] = {C1, C2, C3, C4, C5, C6, C7, C8};
+int rowPin[8] = {R1, R2, R3, R4, R5, R6, R7, R8}; //배열에 행렬 저장
+ 
+
+
+
+
+
+
+int gameMap[8][8] = { //게임 맵
+                    { 0, 0, 0, 0, 0, 0, 0, 0 }, // 0
+                    { 0, 0, 0, 0, 0, 0, 0, 0 }, // 1
+                    { 0, 0, 0, 0, 0, 0, 0, 0 }, // 2
+                    { 1, 0, 0, 0, 0, 0, 0, 0 }, // 3
+                    { 1, 0, 0, 0, 0, 0, 0, 1 }, // 4
+                    { 1, 1, 1, 1, 1, 1, 1, 1 }, // 5
+                    { 1, 1, 1, 1, 1, 1, 1, 1 }, // 6
+                    { 0, 0, 0, 0, 0, 0, 0, 0 }, // 7
+};
+
+int gameOver[8][8] = { //게임오버 맵
+                    { 0, 0, 0, 0, 0, 0, 0, 0 }, // 0
+                    { 0, 0, 0, 0, 0, 0, 0, 0 }, // 1
+                    { 0, 0, 0, 0, 0, 0, 0, 0 }, // 2
+                    { 0, 0, 0, 1, 0, 0, 0, 0 }, // 3
+                    { 0, 1, 1, 1, 1, 1, 0, 0 }, // 4
+                    { 0, 0, 0, 1, 0, 0, 0, 0 }, // 5
+                    { 0, 1, 1, 1, 1, 1, 0, 0 }, // 6
+                    { 0, 1, 1, 1, 1, 1, 0, 0 }, // 7
+};
+ 
+
+
+
+
+
+
+
+
+
+void setup() { //셋업
+  Serial.begin(9600);
+    pinMode(2, INPUT);//right이동
+    pinMode(10, INPUT);//left이동
+    pinMode(11, INPUT);//attack공격
+    for(int i = 0 ; i < 8 ; i++)
+    {
+        pinMode(colPin[i], OUTPUT);
+        digitalWrite(colPin[i], LOW); // Column 핀은 LOW 로 초기화
+        pinMode(rowPin[i], OUTPUT);
+        digitalWrite(rowPin[i], HIGH); // Row 핀은 HIGH 로 초기화
+    }
+}
+
+
+
+
+
+
+
+
+//전역으로 선언된 변수들
+int movePlayer = 0; //플레이어 이동값
+int moveMonster = 7; //몬스터가 오른쪽에서 나타남
+int healthPlayer = 7;//플레이어 hp
+int healthMonster = 3; //몬스터 hp
+int expPlayer = 0; //플레이어 exp
+int levelPlayer = 0; //플레이어레벨
+int powerPlayer = 1; //플레이어공격력
+
+
+
+
+
+
+
+
+
+void loop() { //루프
+  int moveRight = digitalRead(2);//이동 키
+  int moveLeft = digitalRead(10);//이동 키
+  int attack = digitalRead(11);//공격 키
+
+    for(int i = 0 ; i < 8 ; i++) //맵 출력
+    {
+            
+        for(int j = 0 ; j < 8 ; j++)
+        { 
+            
+              digitalWrite(colPin[j], gameMap[i][j]); // Column 핀에 데이터 쓰기
+        }
+        digitalWrite(rowPin[i], LOW); // i LOW 켜기
+        delayMicroseconds(100);
+        digitalWrite(rowPin[i], HIGH); // i LOW 끄기 -> 모든 LED 끄기
+    }
+
+
+
+
+
+    
+
+    if (moveRight == 1) { //이동 좌우
+              gameMap[3][movePlayer] = 0;
+              gameMap[4][movePlayer] = 0;
+              movePlayer++;
+              delay(500);
+              gameMap[3][movePlayer] = 1;
+              gameMap[4][movePlayer] = 1;   
+    } else if (moveLeft == 1) {
+              gameMap[3][movePlayer] = 0;
+              gameMap[4][movePlayer] = 0;
+              movePlayer--;
+              delay(500);
+              gameMap[3][movePlayer] = 1;
+              gameMap[4][movePlayer] = 1;   
+    }
+
+
+
+
+
+    if (movePlayer == 6) { //몬스터 앞에 0.5초 서있을때마다 hp 깎임
+      gameMap[6][healthPlayer] = 0;
+      delay(500);
+      healthPlayer--;
+
+      if (attack == 1) { //어택키 누르면 공격, 몬스터 hp에서 power만큼 피 깎임
+        healthMonster = healthMonster - powerPlayer;
+        delay(200);
+        if (healthMonster <= 0) { //몬스터 피 0이하되면 경험치 + 1, 경험치바 + 1
+          gameMap[7][expPlayer] = 1;
+          expPlayer++;
+          healthMonster++;
+        }
+      }
+    }
+
+    if (expPlayer >= 7) { //레벨 꽉찰시 레벨엄
+      for (int i = 7; i > -1; i--) {
+        levelPlayer++; //레벨업시 레벨바 클리어
+        powerPlayer = powerPlayer + 2;
+        gameMap[7][i] = 0; 
+      }
+    }
+
+    if (healthPlayer < 0) { //사망화면
+      
+      for(int i = 0 ; i < 8 ; i++)
+    {
+            
+        for(int j = 0 ; j < 8 ; j++)
+        { 
+            
+              digitalWrite(colPin[j], gameOver[i][j]); // Column 핀에 데이터 쓰기
+        }
+        digitalWrite(rowPin[i], LOW); // i LOW 켜기
+        delayMicroseconds(100);
+        digitalWrite(rowPin[i], HIGH); // i LOW 끄기 -> 모든 LED 끄기
+    }
+    }
+
+    
+}
